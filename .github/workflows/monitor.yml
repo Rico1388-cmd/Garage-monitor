@@ -1,0 +1,60 @@
+name: Controleer garages in Heemstede
+
+on:
+  schedule:
+    # Iedere vijf minuten, niet precies op het hele uur om wachtrijen te beperken.
+    - cron: "2/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: garage-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      NOTIFY_MODE: ntfy
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      TARGET_CITY: Heemstede
+      GARAGE_TERMS: garage,garagebox,garage-box,autobox,garage-unit
+      NOTIFY_EXISTING_ON_FIRST_RUN: "false"
+      STATE_FILE: ./data/state.json
+      PERSIST_LAST_SUCCESSFUL_CHECK: "false"
+      BROWSER_CHANNEL: chrome
+      HEADLESS: "true"
+
+    steps:
+      - name: Programma ophalen
+        uses: actions/checkout@v4
+
+      - name: Node.js instellen
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Onderdelen installeren
+        run: npm ci --omit=dev --no-audit --no-fund
+
+      - name: Aanbod controleren
+        run: node src/index.mjs --once
+
+      - name: Status bewaren
+        if: success()
+        shell: bash
+        run: |
+          mkdir -p data
+          printf '%s\n' "$(date -u +%Y-%m)" > data/heartbeat.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/state.json data/heartbeat.txt
+          if ! git diff --cached --quiet; then
+            git commit -m "Status garagemonitor bijwerken [skip ci]"
+            git pull --rebase
+            git push
+          fi
