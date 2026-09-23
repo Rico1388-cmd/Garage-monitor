@@ -1,0 +1,19 @@
+{
+  "name": "mijnwoonservice-garage-monitor",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Signaleert nieuwe garages in Heemstede op Mijn Woonservice.",
+  "scripts": {
+    "start": "node src/index.mjs",
+    "check": "node src/index.mjs --once",
+    "test-notification": "node src/index.mjs --test-notification",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright": "1.62.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
