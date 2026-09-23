@@ -1,0 +1,12 @@
+services:
+  garage-monitor:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - garage-state:/data
+    init: true
+
+volumes:
+  garage-state:
